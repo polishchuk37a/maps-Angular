@@ -35,7 +35,16 @@ export class MainComponent implements OnInit {
     this.map = L.map('map').setView(startCoordinates, 12);
 
     this.markers.push(marker([this.defaultCoordinates.x, this.defaultCoordinates.y], {icon: this.markerIcon}));
-    L.marker(startCoordinates, {icon: this.markerIcon}).addTo(this.map);
+
+    const mark = L.marker(startCoordinates, {
+      icon: this.markerIcon,
+      draggable: true
+    }).addTo(this.map);
+
+    mark.on('dragend',() => {
+      this.coordinateForm.get('coordinateX')?.setValue(mark.getLatLng().lat);
+      this.coordinateForm.get('coordinateY')?.setValue(mark.getLatLng().lng);
+    });
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 15,
