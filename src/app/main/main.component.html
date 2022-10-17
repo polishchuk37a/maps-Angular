@@ -1,6 +1,12 @@
 <div class="main-container">
+  <div class="coordinate-form">
+    <form [formGroup]="coordinateForm">
+      <input class="coordinate-x-input" formControlName="coordinateX" placeholder="Coordinate X">
+      <input class="coordinate-y-input" formControlName="coordinateY" placeholder="Coordinate Y">
+    </form>
 
-  <div id="map">
-
+    <button class="search-btn" (click)="setViewAndMarkByCoordinates()">Search</button>
   </div>
+
+  <div id="map" class="map-container"></div>
 </div>
