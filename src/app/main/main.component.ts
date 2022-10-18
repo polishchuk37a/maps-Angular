@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import * as L from 'leaflet';
 import {FormBuilder} from "@angular/forms";
 import {featureGroup, Layer, marker} from "leaflet";
+import 'leaflet-draw';
 
 @Component({
   selector: 'app-main',
@@ -27,6 +28,7 @@ export class MainComponent implements OnInit {
 
   ngOnInit(): void {
     this.initMap();
+    this.drawOnTheMap();
   }
 
   initMap(): void {
@@ -49,6 +51,27 @@ export class MainComponent implements OnInit {
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 15,
     }).addTo(this.map);
+  }
+
+  drawOnTheMap(): void {
+    const drawItems = L.featureGroup().addTo(this.map);
+
+    const drawControl = new L.Control.Draw({
+      edit: {
+        featureGroup: drawItems,
+      },
+      draw: {
+        marker: false,
+        polyline: false
+      },
+      position: "topright"
+    });
+
+    this.map.addControl(drawControl);
+
+    this.map.on(L.Draw.Event.CREATED, (event) => {
+      drawItems.addLayer(event.layer);
+    });
   }
 
   setViewAndMarkByCoordinates(): void {
