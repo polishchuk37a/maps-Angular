@@ -23,35 +23,27 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   coordinateForm = this.formBuilder.group({
-    coordinateX: ['', Validators.required],
-    coordinateY: ['', Validators.required]
+    coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,10})?$/)]],
+    coordinateY: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,10})?$/)]]
   });
 
   @ViewChild('coordinateXInput') coordinateXInput: ElementRef;
 
   private unsubscribe$ = new Subject<void>();
 
+  get isCoordinateXInvalid(): boolean | undefined {
+    return this.coordinateForm.get('coordinateX')?.value !== '' && this.coordinateForm.get('coordinateX')?.invalid;
+  }
+
+  get isCoordinateYInvalid(): boolean | undefined {
+    return this.coordinateForm.get('coordinateY')?.value !== '' && this.coordinateForm.get('coordinateY')?.invalid;
+  }
+
   constructor(private readonly formBuilder: FormBuilder) { }
 
   ngOnInit(): void {
     this.initMap();
     this.drawOnTheMap();
-  }
-
-  readDataFromClipBoard(): void {
-    navigator.clipboard.readText().then((value) => {
-      this.splitCoordinates(value);
-    });
-  }
-
-  splitCoordinates(valueFromClipboard: string): void {
-    const coordinatesArray = valueFromClipboard.split('').filter(value => value !== ',').join('').split(' ', 2);
-    this.setCoordinatesIntoForm({x: coordinatesArray[0], y: coordinatesArray[1]});
-  }
-
-  setCoordinatesIntoForm(coordinate: Coordinate): void {
-    this.coordinateForm.get('coordinateX')?.setValue(coordinate.x);
-    this.coordinateForm.get('coordinateY')?.setValue(coordinate.y);
   }
 
   initMap(): void {
@@ -107,6 +99,22 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
     group.addTo(this.map);
     this.map.fitBounds(group.getBounds());
+  }
+
+  readDataFromClipBoard(): void {
+    navigator.clipboard.readText().then((value) => {
+      this.splitCoordinates(value);
+    });
+  }
+
+  splitCoordinates(valueFromClipboard: string): void {
+    const coordinatesArray = valueFromClipboard.split('').filter(value => value !== ',').join('').split(' ', 2);
+    this.setCoordinatesIntoForm({x: coordinatesArray[0], y: coordinatesArray[1]});
+  }
+
+  setCoordinatesIntoForm(coordinate: Coordinate): void {
+    this.coordinateForm.get('coordinateX')?.setValue(coordinate.x);
+    this.coordinateForm.get('coordinateY')?.setValue(coordinate.y);
   }
 
   ngAfterViewInit(): void {

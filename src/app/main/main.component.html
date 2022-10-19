@@ -2,10 +2,13 @@
   <div class="coordinate-form">
     <form [formGroup]="coordinateForm">
       <input #coordinateXInput class="coordinate-x-input" formControlName="coordinateX" placeholder="Coordinate X">
+      <p class="invalid-value-message" *ngIf="isCoordinateXInvalid">Coordinate X is invalid</p>
+
       <input class="coordinate-y-input" formControlName="coordinateY" placeholder="Coordinate Y">
+      <p class="invalid-value-message invalid-y" *ngIf="isCoordinateYInvalid">Coordinate Y is invalid</p>
     </form>
 
-    <button class="search-btn" (click)="setViewAndMarkByCoordinates()">Search</button>
+    <button class="search-btn" [disabled]="isCoordinateXInvalid || isCoordinateYInvalid" (click)="setViewAndMarkByCoordinates()">Search</button>
   </div>
 
   <div id="map" class="map-container"></div>

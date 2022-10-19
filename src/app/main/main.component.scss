@@ -12,9 +12,13 @@
     display: flex;
     justify-content: center;
 
-
     .coordinate-x-input {
       margin-right: 10px;
+      position: relative;
+    }
+
+    .coordinate-x-input {
+      position: relative;
     }
 
     .search-btn {
@@ -22,8 +26,21 @@
     }
   }
 
+  .invalid-value-message {
+    font-family: "Roboto Light", sans-serif;
+    font-size: 13px;
+    color: red;
+    text-align: center;
+    margin: 0;
+    position: absolute;
+  }
+
+  .invalid-y {
+    margin-left: 187px;
+  }
+
   .map-container {
-    margin-top: 10px;
+    margin-top: 20px;
     box-shadow: rgba(0, 0, 0, 0.25) 0 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0 -3px 5px;
   }
 }
