@@ -1,10 +1,11 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as L from 'leaflet';
 import {featureGroup, Layer, marker} from 'leaflet';
-import {FormBuilder} from "@angular/forms";
+import {FormBuilder, Validators} from "@angular/forms";
 import 'leaflet-draw';
 import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
+import {Coordinate} from "../interface/coordinate";
 
 @Component({
   selector: 'app-main',
@@ -22,8 +23,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   coordinateForm = this.formBuilder.group({
-    coordinateX: [''],
-    coordinateY: ['']
+    coordinateX: ['', Validators.required],
+    coordinateY: ['', Validators.required]
   });
 
   @ViewChild('coordinateXInput') coordinateXInput: ElementRef;
@@ -44,21 +45,13 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   splitCoordinates(valueFromClipboard: string): void {
-    const coordinates = {
-      coordinateX: '',
-      coordinateY: ''
-    };
-
     const coordinatesArray = valueFromClipboard.split('').filter(value => value !== ',').join('').split(' ', 2);
-    coordinates.coordinateX = coordinatesArray[0];
-    coordinates.coordinateY = coordinatesArray[1];
-
-    this.setCoordinatesIntoForm(coordinates.coordinateX, coordinates.coordinateY);
+    this.setCoordinatesIntoForm({x: coordinatesArray[0], y: coordinatesArray[1]});
   }
 
-  setCoordinatesIntoForm(coordinateX: string, coordinateY: string): void {
-    this.coordinateForm.get('coordinateX')?.setValue(coordinateX);
-    this.coordinateForm.get('coordinateY')?.setValue(coordinateY);
+  setCoordinatesIntoForm(coordinate: Coordinate): void {
+    this.coordinateForm.get('coordinateX')?.setValue(coordinate.x);
+    this.coordinateForm.get('coordinateY')?.setValue(coordinate.y);
   }
 
   initMap(): void {
