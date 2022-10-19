@@ -77,7 +77,29 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       draw: {
         marker: false,
-        polyline: false
+        polyline: false,
+        circle: {
+          shapeOptions: {
+            color: '#1540ad',
+            fillColor: '#c1d10f'
+          }
+        },
+        rectangle: {
+          shapeOptions: {
+            color: '#1540ad',
+            fillColor: '#c1d10f'
+          }
+        },
+        polygon: {
+          shapeOptions: {
+            color: '#1540ad',
+            fillColor: '#c1d10f'
+          }
+        },
+        circlemarker: {
+          color: '#1540ad',
+          fillColor: '#c1d10f'
+        }
       },
       position: "topright",
     });
