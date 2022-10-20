@@ -1,11 +1,12 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as L from 'leaflet';
-import {featureGroup, Layer, marker} from 'leaflet';
+import {featureGroup, GeoJSON, Layer, marker} from 'leaflet';
 import {FormBuilder, Validators} from "@angular/forms";
 import 'leaflet-draw';
 import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
 import {Coordinate} from "../interface/coordinate";
+import {StorageService} from "../services/storage.service";
 
 @Component({
   selector: 'app-main',
@@ -15,6 +16,7 @@ import {Coordinate} from "../interface/coordinate";
 export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
   markers: Layer[] = [];
+  geoJson = new L.GeoJSON();
   defaultCoordinates = {x: 48.5132, y: 32.2597};
 
   markerIcon = L.icon({
@@ -23,8 +25,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   coordinateForm = this.formBuilder.group({
-    coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,10})?$/)]],
-    coordinateY: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,10})?$/)]]
+    coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]],
+    coordinateY: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]]
   });
 
   @ViewChild('coordinateXInput') coordinateXInput: ElementRef;
@@ -39,7 +41,7 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.coordinateForm.get('coordinateY')?.value !== '' && this.coordinateForm.get('coordinateY')?.invalid;
   }
 
-  constructor(private readonly formBuilder: FormBuilder) { }
+  constructor(private readonly formBuilder: FormBuilder, private readonly storageService: StorageService) { }
 
   ngOnInit(): void {
     this.initMap();
@@ -66,6 +68,16 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 15,
     }).addTo(this.map);
+
+    const dataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');
+
+    if (dataFromStorage !== '') {
+      this.geoJson.addData(JSON.parse(dataFromStorage)).addTo(this.map);
+      this.geoJson.setStyle({
+        color: '#1540ad',
+        fillColor: '#c1d10f'
+      });
+    }
   }
 
   drawOnTheMap(): void {
@@ -108,6 +120,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.map.on(L.Draw.Event.CREATED, (event) => {
       drawItems.addLayer(event.layer);
+      const geoJsonData = drawItems.toGeoJSON();
+      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(geoJsonData));
     });
   }
 
