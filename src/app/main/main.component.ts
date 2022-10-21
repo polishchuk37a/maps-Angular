@@ -1,12 +1,13 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as L from 'leaflet';
-import {featureGroup, GeoJSON, Layer, marker} from 'leaflet';
-import {FormBuilder, Validators} from "@angular/forms";
+import { featureGroup, Layer, marker} from 'leaflet';
+import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import 'leaflet-draw';
 import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
 import {Coordinate} from "../interface/coordinate";
 import {StorageService} from "../services/storage.service";
+import {GeoJsonObject} from "geojson";
 
 @Component({
   selector: 'app-main',
@@ -28,6 +29,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]],
     coordinateY: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]]
   });
+
+  fileControl = new FormControl('');
 
   @ViewChild('coordinateXInput') coordinateXInput: ElementRef;
 
@@ -151,6 +154,41 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   setCoordinatesIntoForm(coordinate: Coordinate): void {
     this.coordinateForm.get('coordinateX')?.setValue(coordinate.x);
     this.coordinateForm.get('coordinateY')?.setValue(coordinate.y);
+  }
+
+  readFile(event: Event): void {
+    if (event.target === null) {
+      return;
+    }
+
+    const files = (event.target as HTMLInputElement).files;
+
+    if (files === null || files === undefined) {
+      return;
+    }
+
+    const file = files.item(0);
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const geo = reader.result?.toString() ?? '';
+
+      if (file) {
+        const fileExtension = file.name.substr(file.name.lastIndexOf('.') + 1);
+
+        if (fileExtension === 'geojson') {
+          this.geoJson.addData(JSON.parse(geo)).addTo(this.map);
+          this.geoJson.setStyle({
+            color: '#1540ad',
+            fillColor: '#c1d10f'
+          });
+        } else {
+          alert('Incorrect geo data')
+        }
+      }
+    }
+
+    reader.readAsText(file as Blob);
   }
 
   ngAfterViewInit(): void {
