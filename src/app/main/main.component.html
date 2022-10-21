@@ -9,6 +9,7 @@
     </form>
 
     <button class="search-btn" [disabled]="isCoordinateXInvalid || isCoordinateYInvalid" (click)="setViewAndMarkByCoordinates()">Search</button>
+    <button class="save-geo-btn" (click)="saveFile()">Save geo data to file</button>
     <input class="choose-file-input" type="file" [formControl]="fileControl" (change)="readFile($event)">
   </div>
 

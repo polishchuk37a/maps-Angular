@@ -7,7 +7,6 @@ import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
 import {Coordinate} from "../interface/coordinate";
 import {StorageService} from "../services/storage.service";
-import {GeoJsonObject} from "geojson";
 
 @Component({
   selector: 'app-main',
@@ -19,6 +18,7 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   markers: Layer[] = [];
   geoJson = new L.GeoJSON();
   defaultCoordinates = {x: 48.5132, y: 32.2597};
+  geoJsonData = {};
 
   markerIcon = L.icon({
     iconUrl: 'assets/images/ukrainian-flag.png',
@@ -123,8 +123,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.map.on(L.Draw.Event.CREATED, (event) => {
       drawItems.addLayer(event.layer);
-      const geoJsonData = drawItems.toGeoJSON();
-      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(geoJsonData));
+      this.geoJsonData = drawItems.toGeoJSON();
+      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.geoJsonData));
     });
   }
 
@@ -189,6 +189,16 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     reader.readAsText(file as Blob);
+  }
+
+  saveFile(): void {
+    const fileName = 'geoData.geojson';
+    const geoJsonFile = new Blob([JSON.stringify(this.geoJsonData)]);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(geoJsonFile);
+    link.download = fileName;
+    link.click();
+    link.remove();
   }
 
   ngAfterViewInit(): void {
