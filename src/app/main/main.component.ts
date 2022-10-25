@@ -16,6 +16,7 @@ import {StorageService} from "../services/storage.service";
 export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
   markers: Layer[] = [];
+  polygons: Layer[] =[];
   geoJson = new L.GeoJSON();
   defaultCoordinates = {x: 48.5132, y: 32.2597};
   geoJsonData = {};
@@ -77,10 +78,24 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     const dataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');
 
     if (dataFromStorage !== '') {
-      this.geoJson.addData(JSON.parse(dataFromStorage)).addTo(this.map);
+      this.geoJson.addData(JSON.parse(dataFromStorage));
       this.geoJson.setStyle({
         color: '#1540ad',
         fillColor: '#c1d10f'
+      });
+
+      this.polygons.push(this.geoJson);
+      const group = L.featureGroup(this.polygons).addTo(this.map);
+      this.geoJsonData = group.toGeoJSON();
+
+      this.map.on('zoomend', () => {
+        group.eachLayer((layer) => {
+          if (this.map.getZoom() < 13) {
+            this.map.addLayer(layer);
+          } else {
+            this.map.removeLayer(layer);
+          }
+        });
       });
     }
   }
@@ -232,10 +247,24 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
       const fileExtension = file.name.substr(file.name.lastIndexOf('.') + 1);
 
       if (fileExtension === 'geojson') {
-        this.geoJson.addData(JSON.parse(geo)).addTo(this.map);
+        this.geoJson.addData(JSON.parse(geo));
         this.geoJson.setStyle({
           color: '#1540ad',
           fillColor: '#c1d10f'
+        });
+
+        this.polygons.push(this.geoJson);
+        const group = L.featureGroup(this.polygons).addTo(this.map);
+        this.geoJsonData = group.toGeoJSON();
+
+        this.map.on('zoomend', () => {
+          group.eachLayer((layer) => {
+            if (this.map.getZoom() < 13) {
+              this.map.addLayer(layer);
+            } else {
+              this.map.removeLayer(layer);
+            }
+          });
         });
       } else {
         alert('Incorrect geo data');
