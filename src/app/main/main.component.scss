@@ -45,6 +45,38 @@
 
   .map-container {
     margin-top: 20px;
-    box-shadow: rgba(0, 0, 0, 0.25) 0 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0 -3px 5px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 20px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0 -3px 5px;
+  }
+
+  .save-geo {
+    display: flex;
+    justify-content: flex-end;
+
+    .save-geo-btn {
+      margin-top: 15px;
+      background-color: #FFFFFF;
+      border: 1px solid rgb(209,213,219);
+      border-radius: .5rem;
+      box-sizing: border-box;
+      color: #111827;
+      font-family: "Inter var",ui-sans-serif,system-ui,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+      font-size: .875rem;
+      font-weight: 600;
+      line-height: 1.25rem;
+      padding: .75rem 1rem;
+      text-align: center;
+      text-decoration: none #D1D5DB solid;
+      text-decoration-thickness: auto;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+
+      &:disabled {
+        cursor: unset;
+        background: #efefef;
+      }
+    }
   }
 }

@@ -1,6 +1,6 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as L from 'leaflet';
-import { featureGroup, Layer, marker} from 'leaflet';
+import {FeatureGroup, featureGroup, Layer, marker} from 'leaflet';
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import 'leaflet-draw';
 import {fromEvent, Subject} from "rxjs";
@@ -44,34 +44,36 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.coordinateForm.get('coordinateY')?.value !== '' && this.coordinateForm.get('coordinateY')?.invalid;
   }
 
+  get isSaveGeoDataBtnDisabled(): boolean {
+    return Object.keys(this.geoJsonData).length === 0;
+  }
+
   constructor(private readonly formBuilder: FormBuilder, private readonly storageService: StorageService) { }
 
   ngOnInit(): void {
     this.initMap();
     this.drawOnTheMap();
+    this.loadPolygonsFromStorage();
   }
 
   initMap(): void {
     const startCoordinates = L.latLng(this.defaultCoordinates.x, this.defaultCoordinates.y);
 
-    this.map = L.map('map').setView(startCoordinates, 12);
+    this.map = L.map('map').setView(startCoordinates, 15);
 
     this.markers.push(marker([this.defaultCoordinates.x, this.defaultCoordinates.y], {icon: this.markerIcon}));
 
-    const mark = L.marker(startCoordinates, {
-      icon: this.markerIcon,
-      draggable: true
-    }).addTo(this.map);
+    const group = new L.FeatureGroup(this.markers);
+    group.addTo(this.map);
 
-    mark.on('dragend',() => {
-      this.coordinateForm.get('coordinateX')?.setValue(mark.getLatLng().lat);
-      this.coordinateForm.get('coordinateY')?.setValue(mark.getLatLng().lng);
-    });
+    this.showHideMarkers(group);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 15,
     }).addTo(this.map);
+  }
 
+  loadPolygonsFromStorage(): void {
     const dataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');
 
     if (dataFromStorage !== '') {
@@ -126,6 +128,54 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
       this.geoJsonData = drawItems.toGeoJSON();
       this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.geoJsonData));
     });
+
+    this.showHidePolygons(drawItems);
+  }
+
+  showHidePolygons(polygonGroup: FeatureGroup): void {
+    this.map.on('zoomend', () => {
+      polygonGroup.eachLayer((layer) => {
+        if (layer instanceof L.Polygon || layer instanceof L.Rectangle || layer instanceof L.Circle || layer instanceof L.CircleMarker) {
+          if (this.map.getZoom() < 13) {
+            this.map.addLayer(layer);
+          } else {
+            this.map.removeLayer(layer);
+          }
+        }
+
+        if (layer instanceof L.Marker) {
+          if (this.map.getZoom() < 15) {
+            this.map.removeLayer(layer);
+          } else {
+            this.map.addLayer(layer);
+          }
+        }
+      });
+    });
+  }
+
+  showHideMarkers(markerGroup: FeatureGroup): void {
+    this.map.on('zoomend', () => {
+      markerGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          if (this.map.getZoom() < 15) {
+            this.map.removeLayer(layer);
+          } else {
+            this.map.addLayer(layer);
+          }
+        }
+      });
+    })
+
+    markerGroup.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        layer.dragging?.enable();
+
+        layer.on('dragend', () => {
+          this.setCoordinatesIntoForm({x: (layer.getLatLng().lat).toString(), y: (layer.getLatLng().lng).toString()});
+        });
+      }
+    });
   }
 
   setViewAndMarkByCoordinates(): void {
@@ -135,9 +185,11 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     this.markers.push(marker([x, y], {icon: this.markerIcon}));
 
     const group = featureGroup(this.markers);
-
     group.addTo(this.map);
+
     this.map.fitBounds(group.getBounds());
+
+    this.showHideMarkers(group);
   }
 
   readDataFromClipBoard(): void {
@@ -168,23 +220,25 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const file = files.item(0);
+
+    if (file === null) {
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onloadend = () => {
       const geo = reader.result?.toString() ?? '';
+      const fileExtension = file.name.substr(file.name.lastIndexOf('.') + 1);
 
-      if (file) {
-        const fileExtension = file.name.substr(file.name.lastIndexOf('.') + 1);
-
-        if (fileExtension === 'geojson') {
-          this.geoJson.addData(JSON.parse(geo)).addTo(this.map);
-          this.geoJson.setStyle({
-            color: '#1540ad',
-            fillColor: '#c1d10f'
-          });
-        } else {
-          alert('Incorrect geo data')
-        }
+      if (fileExtension === 'geojson') {
+        this.geoJson.addData(JSON.parse(geo)).addTo(this.map);
+        this.geoJson.setStyle({
+          color: '#1540ad',
+          fillColor: '#c1d10f'
+        });
+      } else {
+        alert('Incorrect geo data');
       }
     }
 
