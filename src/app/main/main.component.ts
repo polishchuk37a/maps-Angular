@@ -1,5 +1,6 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import * as L from 'leaflet';
+import 'leaflet.markercluster';
 import {FeatureGroup, featureGroup, Layer, marker} from 'leaflet';
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import 'leaflet-draw';
@@ -16,8 +17,8 @@ import {StorageService} from "../services/storage.service";
 export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
   markers: Layer[] = [];
-  polygons: Layer[] =[];
   geoJson = new L.GeoJSON();
+  markerCluster =  new L.MarkerClusterGroup();
   defaultCoordinates = {x: 48.5132, y: 32.2597};
   geoJsonData = {};
 
@@ -84,20 +85,18 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
         fillColor: '#c1d10f'
       });
 
-      this.polygons.push(this.geoJson);
-      const group = L.featureGroup(this.polygons).addTo(this.map);
-      this.geoJsonData = group.toGeoJSON();
-
-      this.map.on('zoomend', () => {
-        group.eachLayer((layer) => {
-          if (this.map.getZoom() < 13) {
-            this.map.addLayer(layer);
-          } else {
-            this.map.removeLayer(layer);
-          }
-        });
-      });
+      this.showOrHideLayers(this.geoJson);
     }
+  }
+
+  addClustersOnMap(): void {
+    this.markerCluster.addLayer(this.geoJson);
+    this.map.addLayer(this.markerCluster);
+  }
+
+  removeClustersFromMap(): void {
+    this.markerCluster.removeLayer(this.geoJson);
+    this.map.removeLayer(this.markerCluster);
   }
 
   drawOnTheMap(): void {
@@ -144,14 +143,14 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
       this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.geoJsonData));
     });
 
-    this.showHidePolygons(drawItems);
+    this.showOrHideLayers(drawItems);
   }
 
-  showHidePolygons(polygonGroup: FeatureGroup): void {
+  showOrHideLayers(layers: FeatureGroup | L.GeoJSON): void {
     this.map.on('zoomend', () => {
-      polygonGroup.eachLayer((layer) => {
+      layers.eachLayer((layer) => {
         if (layer instanceof L.Polygon || layer instanceof L.Rectangle || layer instanceof L.Circle || layer instanceof L.CircleMarker) {
-          if (this.map.getZoom() < 13) {
+          if (this.map.getZoom() < 8) {
             this.map.addLayer(layer);
           } else {
             this.map.removeLayer(layer);
@@ -159,10 +158,12 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         if (layer instanceof L.Marker) {
-          if (this.map.getZoom() < 15) {
-            this.map.removeLayer(layer);
-          } else {
+          if (this.map.getZoom() > 7) {
             this.map.addLayer(layer);
+            this.addClustersOnMap();
+          } else {
+            this.map.removeLayer(layer);
+            this.removeClustersFromMap();
           }
         }
       });
@@ -173,10 +174,10 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     this.map.on('zoomend', () => {
       markerGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
-          if (this.map.getZoom() < 15) {
-            this.map.removeLayer(layer);
-          } else {
+          if (this.map.getZoom() > 7) {
             this.map.addLayer(layer);
+          } else {
+            this.map.removeLayer(layer);
           }
         }
       });
@@ -247,25 +248,13 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
       const fileExtension = file.name.substr(file.name.lastIndexOf('.') + 1);
 
       if (fileExtension === 'geojson') {
-        this.geoJson.addData(JSON.parse(geo));
+        this.geoJson.addData(JSON.parse(geo)).addTo(this.map);
         this.geoJson.setStyle({
           color: '#1540ad',
           fillColor: '#c1d10f'
         });
 
-        this.polygons.push(this.geoJson);
-        const group = L.featureGroup(this.polygons).addTo(this.map);
-        this.geoJsonData = group.toGeoJSON();
-
-        this.map.on('zoomend', () => {
-          group.eachLayer((layer) => {
-            if (this.map.getZoom() < 13) {
-              this.map.addLayer(layer);
-            } else {
-              this.map.removeLayer(layer);
-            }
-          });
-        });
+        this.showOrHideLayers(this.geoJson);
       } else {
         alert('Incorrect geo data');
       }
