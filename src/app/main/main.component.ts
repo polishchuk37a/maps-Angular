@@ -1,7 +1,14 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import * as L from 'leaflet';
+import {FeatureGroup, Layer, marker} from 'leaflet';
 import 'leaflet.markercluster';
-import {FeatureGroup, featureGroup, Layer, marker} from 'leaflet';
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import 'leaflet-draw';
 import {fromEvent, Subject} from "rxjs";
@@ -12,7 +19,7 @@ import {StorageService} from "../services/storage.service";
 @Component({
   selector: 'app-main',
   templateUrl: './main.component.html',
-  styleUrls: ['./main.component.scss']
+  styleUrls: ['./main.component.scss'],
 })
 export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
@@ -50,7 +57,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
     return Object.keys(this.geoJsonData).length === 0;
   }
 
-  constructor(private readonly formBuilder: FormBuilder, private readonly storageService: StorageService) { }
+  constructor(private readonly formBuilder: FormBuilder,
+              private readonly storageService: StorageService) { }
 
   ngOnInit(): void {
     this.initMap();
@@ -65,7 +73,7 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.markers.push(marker([this.defaultCoordinates.x, this.defaultCoordinates.y], {icon: this.markerIcon}));
 
-    const group = new L.FeatureGroup(this.markers);
+    const group = L.featureGroup(this.markers);
     group.addTo(this.map);
 
     this.showHideMarkers(group);
@@ -101,6 +109,8 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
   drawOnTheMap(): void {
     const drawItems = L.featureGroup().addTo(this.map);
+
+    this.markers[0].addTo(drawItems);
 
     const drawControl = new L.Control.Draw({
       edit: {
@@ -141,6 +151,12 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
       drawItems.addLayer(event.layer);
       this.geoJsonData = drawItems.toGeoJSON();
       this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.geoJsonData));
+    });
+
+    this.map.on(L.Draw.Event.EDITSTART, () => {
+      this.markers.forEach((el) => {
+        el.addTo(drawItems);
+      });
     });
 
     this.showOrHideLayers(drawItems);
@@ -185,7 +201,6 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
     markerGroup.eachLayer((layer) => {
       if (layer instanceof L.Marker) {
-        layer.dragging?.enable();
 
         layer.on('dragend', () => {
           this.setCoordinatesIntoForm({x: (layer.getLatLng().lat).toString(), y: (layer.getLatLng().lng).toString()});
@@ -200,7 +215,7 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.markers.push(marker([x, y], {icon: this.markerIcon}));
 
-    const group = featureGroup(this.markers);
+    const group = L.featureGroup(this.markers);
     group.addTo(this.map);
 
     this.map.fitBounds(group.getBounds());
