@@ -25,7 +25,15 @@ export class MainComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
   markers: Layer[] = [];
   geoJson = new L.GeoJSON();
-  markerCluster =  new L.MarkerClusterGroup();
+  markerCluster =  new L.MarkerClusterGroup({
+    iconCreateFunction: cluster => {
+      return L.divIcon({
+        html: `<span>${cluster.getChildCount()}</span>`,
+        className: 'custom-marker-cluster',
+        iconSize: L.point(33, 33)
+      });
+    }
+  });
   defaultCoordinates = {x: 48.5132, y: 32.2597};
   geoJsonData = {};
 
