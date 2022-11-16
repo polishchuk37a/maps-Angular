@@ -1,0 +1,23 @@
+<div class="map-page">
+  <div class="form-container">
+    <form [formGroup]="coordinatesForm" class="coordinate-form">
+      <input #coordinateXInput  placeholder="Write coordinate X" type="text" formControlName="coordinateX" class="coordinateX-control">
+      <p *ngIf="isCoordinateXInvalid" class="invalid-value-message">Invalid coordinate X</p>
+
+      <input placeholder="Write coordinate Y" type="text" formControlName="coordinateY" class="coordinateY-control">
+      <p *ngIf="isCoordinateYInvalid" class="invalid-value-message invalid-y">Invalid coordinate Y</p>
+
+      <button class="search-btn" (click)="setMarkerByCoordinates()">Search</button>
+    </form>
+  </div>
+
+  <div id="map" class="map"></div>
+
+  <div class="file-control">
+    <button [disabled]="isSaveGeoDataButtonDisabled" (click)="saveGeoDataInFile()">Save polygons in file</button>
+    <input id="file" type="file" [formControl]="fileControl" (change)="getGeoDataFromFile($event)">
+    <label for="file">Load polygons from file</label>
+  </div>
+</div>
+
+
