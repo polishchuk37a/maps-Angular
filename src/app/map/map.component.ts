@@ -2,12 +2,12 @@ import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild} from
 import * as L from "leaflet";
 import 'leaflet.markercluster';
 import 'leaflet-draw';
-import {GeoJsonObject} from "geojson";
 import {StorageService} from "../services/storage.service";
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import {Coordinate} from "../interface/coordinate";
 import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
+import {GeoJsonObject} from "geojson";
 
 @Component({
   selector: 'app-map',
@@ -17,7 +17,6 @@ import {takeUntil, tap} from "rxjs/operators";
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
   drawnItems = new L.FeatureGroup();
-  geoJson = new L.GeoJSON();
   markerCluster = new L.MarkerClusterGroup({
       iconCreateFunction: cluster => {
         return L.divIcon({
@@ -33,7 +32,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     iconSize: [40, 50],
     iconAnchor: [20, 50]
   });
-  geoDataObj: GeoJsonObject;
+  drawnItemCollection = {features: <any>[], type: 'FeatureCollection'};
 
   fileControl = new FormControl('');
 
@@ -55,7 +54,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get isSaveGeoDataButtonDisabled() : boolean {
-    return this.geoDataObj === undefined;
+    return this.drawnItemCollection.features.length === 0;
   }
 
   constructor(private readonly storageService: StorageService,
@@ -110,10 +109,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
               fillColor: '#c1d10f'
             }
           },
-          circlemarker: {
-            color: '#1540ad',
-            fillColor: '#c1d10f'
-          }
+          circlemarker: false
         }
       }
     );
@@ -121,8 +117,21 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.map.on(L.Draw.Event.CREATED, event => {
       this.drawnItems.addLayer(event.layer).addTo(this.map);
-      this.geoDataObj = this.drawnItems.toGeoJSON();
-      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.geoDataObj));
+
+      const layer = event.layer;
+      const jsonLayer = layer.toGeoJSON();
+
+      if (layer instanceof L.Circle) {
+        const circleRadius = layer.getRadius();
+
+        if (jsonLayer) {
+          jsonLayer.properties = {...jsonLayer.properties, radius: circleRadius};
+        }
+      }
+
+      this.drawnItemCollection.features.push(jsonLayer);
+
+      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.drawnItemCollection));
     });
 
     this.map.on(L.Draw.Event.EDITSTART, () => {
@@ -139,9 +148,26 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.map.on(L.Draw.Event.DELETED, () => {
-
       this.storageService.setDataToLocalStorage('geoCoordinates', '');
     });
+  }
+
+  convertPointToCircle(geoJsonObj: GeoJsonObject): L.GeoJSON {
+    return L.geoJSON(geoJsonObj, {
+      pointToLayer: (feature, latlng) => {
+        if (feature.geometry.type === 'Point' && feature.properties.radius) {
+          return L.circle(latlng, {
+            radius: feature.properties.radius,
+            color: '#1540ad',
+            fillColor: '#c1d10f'
+          });
+        }
+
+        return L.marker(latlng,  {
+          icon: this.markerIcon
+        })
+      }
+    })
   }
 
   hideOrShowDrawnItems(): void {
@@ -170,27 +196,22 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const geoDataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');
 
     if (geoDataFromStorage !== '') {
-      this.geoJson.addData(JSON.parse(geoDataFromStorage)).addTo(this.map);
+      const localGeoJson = this.convertPointToCircle(JSON.parse(geoDataFromStorage));
 
-      this.geoJson.eachLayer(layer => {
+      localGeoJson.eachLayer(layer => {
         layer.addTo(this.drawnItems);
-
-        if (layer instanceof L.Marker) {
-          layer.setIcon(this.markerIcon);
-        }
       });
-      this.geoJson.setStyle({
+
+      localGeoJson.setStyle({
         color: '#1540ad',
         fillColor: '#c1d10f'
       });
-    } else {
-      return;
     }
   }
 
   saveGeoDataInFile(): void {
     const fileName = 'geoData.geojson';
-    const geoJsonFile = new Blob([JSON.stringify(this.geoDataObj)]);
+    const geoJsonFile = new Blob([JSON.stringify(this.drawnItemCollection)]);
     const link = document.createElement('a');
     link.href = URL.createObjectURL(geoJsonFile);
     link.download = fileName;
@@ -219,27 +240,24 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     reader.readAsText(file as Blob);
 
     reader.onloadend = () => {
-      const geo = reader.result?.toString() ?? '';
+      const geoFromFile = reader.result?.toString() ?? '';
       const fileExtension = file.name.substr(file.name.lastIndexOf('.') + 1);
 
       if (fileExtension === 'geojson') {
-        this.geoJson.clearLayers();
         this.drawnItems.clearLayers();
 
-        this.geoJson.addData(JSON.parse(geo));
-        this.geoJson.eachLayer(layer => {
-          layer.addTo(this.drawnItems);
+        const localGeoJson = this.convertPointToCircle(JSON.parse(geoFromFile));
 
-          if (layer instanceof L.Marker) {
-            layer.setIcon(this.markerIcon);
-          }
+        localGeoJson.eachLayer(layer => {
+          layer.addTo(this.drawnItems);
         });
-        this.geoJson.setStyle({
+
+        localGeoJson.setStyle({
           color: '#1540ad',
           fillColor: '#c1d10f'
-        })
+        });
       } else {
-        alert('Incorrect geo data');
+        alert('Incorrect geoFromFile data');
       }
     }
   }
