@@ -9,6 +9,7 @@ import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
 import {GeoJsonObject} from "geojson";
 import '@geoman-io/leaflet-geoman-free';
+import {FileService} from "../services/file.service";
 
 @Component({
   selector: 'app-map',
@@ -63,7 +64,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   constructor(private readonly storageService: StorageService,
-              private readonly formBuilder: FormBuilder) { }
+              private readonly formBuilder: FormBuilder,
+              private readonly fileService: FileService) { }
 
   ngOnInit(): void {
     this.initMap();
@@ -232,13 +234,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveGeoDataInFile(): void {
-    const fileName = 'geoData.geojson';
-    const geoJsonFile = new Blob([JSON.stringify(this.geoDataObj)]);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(geoJsonFile);
-    link.download = fileName;
-    link.click();
-    link.remove();
+    this.fileService.saveGeoData(this.geoDataObj);
   }
 
   getGeoDataFromFile(event: Event): void {
