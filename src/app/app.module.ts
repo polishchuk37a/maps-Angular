@@ -7,6 +7,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
+import {OverlayModule} from "@angular/cdk/overlay";
+import {MatSelectModule} from "@angular/material/select";
 
 @NgModule({
   declarations: [
@@ -20,6 +22,8 @@ import {MatInputModule} from "@angular/material/input";
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    OverlayModule,
+    MatSelectModule
   ],
   providers: [],
   bootstrap: [AppComponent]

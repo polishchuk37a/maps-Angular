@@ -21,6 +21,16 @@
 
   <div class="file-control">
     <button mat-raised-button class="save-in-file-btn" [disabled]="isSaveGeoDataButtonDisabled" (click)="saveGeoDataInFile()">Save polygons in file</button>
+
+    <mat-form-field appearance="fill" cdkOverlayOrigin #overlay="cdkOverlayOrigin">
+      <mat-select multiple></mat-select>
+    </mat-form-field>
+    <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="overlay" [cdkConnectedOverlayOpen]="true">
+      <ul class="overlay-list">
+        <li *ngFor="let item of itemKind">{{item}}</li>
+      </ul>
+    </ng-template>
+
     <button mat-raised-button class="load-from-file-btn" (click)="fileInput.click()">Load polygons from file</button>
     <input hidden id="file" type="file" #fileInput [formControl]="fileControl" (change)="getGeoDataFromFile($event)">
   </div>

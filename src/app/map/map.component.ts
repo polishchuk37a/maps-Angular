@@ -8,6 +8,7 @@ import {Coordinate} from "../interface/coordinate";
 import {fromEvent, Subject} from "rxjs";
 import {takeUntil, tap} from "rxjs/operators";
 import {GeoJsonObject} from "geojson";
+import '@geoman-io/leaflet-geoman-free';
 
 @Component({
   selector: 'app-map',
@@ -17,6 +18,8 @@ import {GeoJsonObject} from "geojson";
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   map: L.Map;
   drawnItems = new L.FeatureGroup();
+  geoJson = new L.GeoJSON();
+  geoDataObj: GeoJsonObject;
   markerCluster = new L.MarkerClusterGroup({
       iconCreateFunction: cluster => {
         return L.divIcon({
@@ -32,9 +35,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     iconSize: [40, 50],
     iconAnchor: [20, 50]
   });
-  drawnItemCollection = {features: <any>[], type: 'FeatureCollection'};
+  // drawnItemCollection = {features: <any>[], type: 'FeatureCollection'};
 
   fileControl = new FormControl('');
+
+  itemKind = ['All', 'Points', 'Circles', 'Polygons', 'Rectangles'];
 
   coordinatesForm = this.formBuilder.group({
     coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]],
@@ -54,7 +59,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get isSaveGeoDataButtonDisabled() : boolean {
-    return this.drawnItemCollection.features.length === 0;
+    return this.geoDataObj === undefined;
   }
 
   constructor(private readonly storageService: StorageService,
@@ -115,24 +120,37 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     );
     this.map.addControl(drawControl);
 
+    // event to add circle radius property in object to save it in file or local storage
+    // this.map.on(L.Draw.Event.CREATED, event => {
+    //   this.drawnItems.addLayer(event.layer).addTo(this.map);
+    //
+    //   const layer = event.layer;
+    //   const jsonLayer = layer.toGeoJSON();
+    //
+    //   if (layer instanceof L.Circle) {
+    //     const circleRadius = layer.getRadius();
+    //
+    //     if (jsonLayer) {
+    //       jsonLayer.properties = {...jsonLayer.properties, radius: circleRadius};
+    //     }
+    //   }
+    //
+    //   this.drawnItemCollection.features.push(jsonLayer);
+    //
+    //   this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.drawnItemCollection));
+    // });
+
     this.map.on(L.Draw.Event.CREATED, event => {
       this.drawnItems.addLayer(event.layer).addTo(this.map);
 
-      const layer = event.layer;
-      const jsonLayer = layer.toGeoJSON();
-
-      if (layer instanceof L.Circle) {
-        const circleRadius = layer.getRadius();
-
-        if (jsonLayer) {
-          jsonLayer.properties = {...jsonLayer.properties, radius: circleRadius};
-        }
+      if (event.layer instanceof L.Circle) {
+        const convertedCircle = L.PM.Utils.circleToPolygon(event.layer);
+        convertedCircle.addTo(this.drawnItems);
       }
 
-      this.drawnItemCollection.features.push(jsonLayer);
-
-      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.drawnItemCollection));
-    });
+      this.geoDataObj = this.drawnItems.toGeoJSON();
+      this.storageService.setDataToLocalStorage('geoCoordinates', JSON.stringify(this.geoDataObj));
+    })
 
     this.map.on(L.Draw.Event.EDITSTART, () => {
       this.map.removeLayer(this.markerCluster);
@@ -152,23 +170,23 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  convertPointToCircle(geoJsonObj: GeoJsonObject): L.GeoJSON {
-    return L.geoJSON(geoJsonObj, {
-      pointToLayer: (feature, latlng) => {
-        if (feature.geometry.type === 'Point' && feature.properties.radius) {
-          return L.circle(latlng, {
-            radius: feature.properties.radius,
-            color: '#1540ad',
-            fillColor: '#c1d10f'
-          });
-        }
-
-        return L.marker(latlng,  {
-          icon: this.markerIcon
-        })
-      }
-    })
-  }
+  // convertPointToCircle(geoJsonObj: GeoJsonObject): L.GeoJSON {
+  //   return L.geoJSON(geoJsonObj, {
+  //     pointToLayer: (feature, latlng) => {
+  //       if (feature.geometry.type === 'Point' && feature.properties.radius) {
+  //         return L.circle(latlng, {
+  //           radius: feature.properties.radius,
+  //           color: '#1540ad',
+  //           fillColor: '#c1d10f'
+  //         });
+  //       }
+  //
+  //       return L.marker(latlng,  {
+  //         icon: this.markerIcon
+  //       })
+  //     }
+  //   });
+  // }
 
   hideOrShowDrawnItems(): void {
     this.map.on("zoomend", () => {
@@ -196,13 +214,17 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const geoDataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');
 
     if (geoDataFromStorage !== '') {
-      const localGeoJson = this.convertPointToCircle(JSON.parse(geoDataFromStorage));
+      this.geoJson.addData(JSON.parse(geoDataFromStorage));
 
-      localGeoJson.eachLayer(layer => {
+      this.geoJson.eachLayer(layer => {
         layer.addTo(this.drawnItems);
+
+        if (layer instanceof L.Marker) {
+          layer.setIcon(this.markerIcon);
+        }
       });
 
-      localGeoJson.setStyle({
+      this.geoJson.setStyle({
         color: '#1540ad',
         fillColor: '#c1d10f'
       });
@@ -211,7 +233,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   saveGeoDataInFile(): void {
     const fileName = 'geoData.geojson';
-    const geoJsonFile = new Blob([JSON.stringify(this.drawnItemCollection)]);
+    const geoJsonFile = new Blob([JSON.stringify(this.geoDataObj)]);
     const link = document.createElement('a');
     link.href = URL.createObjectURL(geoJsonFile);
     link.download = fileName;
@@ -245,14 +267,19 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (fileExtension === 'geojson') {
         this.drawnItems.clearLayers();
+        this.geoJson.clearLayers();
 
-        const localGeoJson = this.convertPointToCircle(JSON.parse(geoFromFile));
+        this.geoJson.addData(JSON.parse(geoFromFile));
 
-        localGeoJson.eachLayer(layer => {
+        this.geoJson.eachLayer(layer => {
           layer.addTo(this.drawnItems);
+
+          if (layer instanceof L.Marker) {
+            layer.setIcon(this.markerIcon);
+          }
         });
 
-        localGeoJson.setStyle({
+        this.geoJson.setStyle({
           color: '#1540ad',
           fillColor: '#c1d10f'
         });

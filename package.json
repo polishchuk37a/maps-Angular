@@ -20,6 +20,7 @@
     "@angular/platform-browser": "~12.2.0",
     "@angular/platform-browser-dynamic": "~12.2.0",
     "@angular/router": "~12.2.0",
+    "@geoman-io/leaflet-geoman-free": "^2.13.1",
     "@types/geojson": "^7946.0.10",
     "@types/leaflet-draw": "^1.0.5",
     "browserify": "^17.0.0",
