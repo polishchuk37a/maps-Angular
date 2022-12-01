@@ -11,11 +11,15 @@ import {OverlayModule} from "@angular/cdk/overlay";
 import {MatSelectModule} from "@angular/material/select";
 import {MatIconModule} from "@angular/material/icon";
 import {MatTooltipModule} from "@angular/material/tooltip";
+import { AppRoutingModule } from './app-routing.module';
+import { SecondMapComponent } from './second-map/second-map.component';
+import {RouterModule} from "@angular/router";
 
 @NgModule({
   declarations: [
     AppComponent,
-    MapComponent
+    MapComponent,
+    SecondMapComponent
   ],
   imports: [
     BrowserModule,
@@ -27,7 +31,9 @@ import {MatTooltipModule} from "@angular/material/tooltip";
     OverlayModule,
     MatSelectModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    AppRoutingModule,
+    RouterModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -12,6 +12,7 @@ import '@geoman-io/leaflet-geoman-free';
 import {FileService} from "../services/file.service";
 import {FocusMonitor} from "@angular/cdk/a11y";
 import {CdkConnectedOverlay} from "@angular/cdk/overlay";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-map',
@@ -75,12 +76,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private readonly storageService: StorageService,
               private readonly formBuilder: FormBuilder,
               private readonly fileService: FileService,
-              private readonly focusMonitor: FocusMonitor) { }
+              private readonly focusMonitor: FocusMonitor,
+              private readonly router: Router) { }
 
   ngOnInit(): void {
     this.initMap();
     this.drawOnMap();
     this.getGeoDataFromStorage();
+    this.addMarkerClusters();
     // this.hideOrShowDrawnItems();
 
     this.isOverlayVisible = this.focusMonitor.monitor(this.overlayInput)
@@ -247,27 +250,15 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // hideOrShowDrawnItems(): void {
-  //   this.map.on("zoomend", () => {
-  //     this.drawnItems.eachLayer(layer => {
-  //       if (layer instanceof L.Marker) {
-  //         if (this.map.getZoom() < 10) {
-  //           this.map.removeLayer(layer);
-  //           this.map.removeLayer(this.markerCluster);
-  //         } else {
-  //           this.markerCluster.addLayer(layer);
-  //           this.map.addLayer(this.markerCluster);
-  //         }
-  //       } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle || L.Circle || L.CircleMarker) {
-  //         if (this.map.getZoom() < 10) {
-  //           this.map.addLayer(layer)
-  //         } else {
-  //           this.map.removeLayer(layer);
-  //         }
-  //       }
-  //     });
-  //   });
-  // }
+  addMarkerClusters(): void {
+   this.markerCluster.addLayer(this.drawnItems);
+   this.map.addLayer(this.markerCluster);
+  }
+
+  watchSecondMap(): void {
+    this.map.remove();
+    this.router.navigate(['/second-map']);
+  }
 
   getGeoDataFromStorage(): void {
     const geoDataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');

@@ -46,7 +46,7 @@
       <button mat-raised-button class="load-from-file-btn" (click)="fileInput.click()">Load polygons from file</button>
       <input hidden id="file" type="file" #fileInput [formControl]="fileControl" (change)="getGeoDataFromFile($event)">
 
-      <button mat-raised-button class="next-page-btn" matTooltip="Another map">
+      <button mat-raised-button class="next-page-btn" matTooltip="Another map" (click)="watchSecondMap()">
         <mat-icon>arrow_forward_ios</mat-icon>
       </button>
     </div>
