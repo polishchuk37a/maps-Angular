@@ -190,6 +190,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.map.on(L.Draw.Event.EDITSTOP, () => {
+      this.map.addLayer(this.markerCluster);
       this.map.scrollWheelZoom.enable();
     });
 
