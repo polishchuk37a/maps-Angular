@@ -5,11 +5,13 @@ import 'leaflet-draw';
 import {StorageService} from "../services/storage.service";
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import {Coordinate} from "../interface/coordinate";
-import {fromEvent, Subject} from "rxjs";
-import {takeUntil, tap} from "rxjs/operators";
+import {fromEvent, merge, Observable, Subject} from "rxjs";
+import {filter, mapTo, takeUntil, tap} from "rxjs/operators";
 import {GeoJsonObject} from "geojson";
 import '@geoman-io/leaflet-geoman-free';
 import {FileService} from "../services/file.service";
+import {FocusMonitor} from "@angular/cdk/a11y";
+import {CdkConnectedOverlay} from "@angular/cdk/overlay";
 
 @Component({
   selector: 'app-map',
@@ -38,9 +40,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   // drawnItemCollection = {features: <any>[], type: 'FeatureCollection'};
 
-  fileControl = new FormControl('');
+  showOverlay: Observable<boolean>;
+  isOverlayVisible: Observable<boolean>;
+  isOverlayHidden: Observable<boolean>;
 
-  itemKind = ['All', 'Points', 'Circles', 'Polygons', 'Rectangles'];
+  fileControl = new FormControl('');
+  overlayControl = new FormControl('');
+
+  itemKind = ['All', 'Points', 'Polygons'];
 
   coordinatesForm = this.formBuilder.group({
     coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]],
@@ -48,6 +55,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   @ViewChild('coordinateXInput') coordinateXInput: ElementRef;
+  @ViewChild('overlayInput', {static: true}) overlayInput: ElementRef;
+  @ViewChild(CdkConnectedOverlay, {static: true}) overlay: CdkConnectedOverlay;
 
   private unsubscribe$ = new Subject<void>();
 
@@ -65,13 +74,27 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private readonly storageService: StorageService,
               private readonly formBuilder: FormBuilder,
-              private readonly fileService: FileService) { }
+              private readonly fileService: FileService,
+              private readonly focusMonitor: FocusMonitor) { }
 
   ngOnInit(): void {
     this.initMap();
     this.drawOnMap();
     this.getGeoDataFromStorage();
-    this.hideOrShowDrawnItems();
+    // this.hideOrShowDrawnItems();
+
+    this.isOverlayVisible = this.focusMonitor.monitor(this.overlayInput)
+      .pipe(
+        filter((focused) => !!focused),
+        mapTo(true)
+      )
+
+    this.isOverlayHidden = this.overlay.backdropClick
+      .pipe(
+        mapTo(false)
+      )
+
+    this.showOverlay = merge(this.isOverlayVisible, this.isOverlayHidden);
   }
 
   initMap(): void {
@@ -190,27 +213,61 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   //   });
   // }
 
-  hideOrShowDrawnItems(): void {
-    this.map.on("zoomend", () => {
-      this.drawnItems.eachLayer(layer => {
-        if (layer instanceof L.Marker) {
-          if (this.map.getZoom() < 10) {
-            this.map.removeLayer(layer);
-            this.map.removeLayer(this.markerCluster);
-          } else {
-            this.markerCluster.addLayer(layer);
-            this.map.addLayer(this.markerCluster);
-          }
-        } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle || L.Circle || L.CircleMarker) {
-          if (this.map.getZoom() < 10) {
-            this.map.addLayer(layer)
-          } else {
+  getSelectedValueFromOverlay(selectedValue: string): void {
+    this.overlayControl.patchValue(selectedValue);
+
+    switch (selectedValue) {
+      case 'Points': {
+        this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
+
+        this.drawnItems.eachLayer(layer => {
+          if (layer instanceof L.Circle || layer instanceof L.Polygon || layer instanceof L.Rectangle) {
             this.map.removeLayer(layer);
           }
-        }
-      });
-    });
+        });
+
+        break;
+      }
+      case 'Polygons': {
+        this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
+
+        this.drawnItems.eachLayer(layer => {
+          if (layer instanceof L.Rectangle || layer instanceof L.Marker || layer instanceof L.Circle) {
+            this.map.removeLayer(layer);
+          }
+        });
+
+        break;
+      }
+      default: {
+        this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
+
+        break;
+      }
+    }
   }
+
+  // hideOrShowDrawnItems(): void {
+  //   this.map.on("zoomend", () => {
+  //     this.drawnItems.eachLayer(layer => {
+  //       if (layer instanceof L.Marker) {
+  //         if (this.map.getZoom() < 10) {
+  //           this.map.removeLayer(layer);
+  //           this.map.removeLayer(this.markerCluster);
+  //         } else {
+  //           this.markerCluster.addLayer(layer);
+  //           this.map.addLayer(this.markerCluster);
+  //         }
+  //       } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle || L.Circle || L.CircleMarker) {
+  //         if (this.map.getZoom() < 10) {
+  //           this.map.addLayer(layer)
+  //         } else {
+  //           this.map.removeLayer(layer);
+  //         }
+  //       }
+  //     });
+  //   });
+  // }
 
   getGeoDataFromStorage(): void {
     const geoDataFromStorage = this.storageService.getDataFromLocalStorage('geoCoordinates');

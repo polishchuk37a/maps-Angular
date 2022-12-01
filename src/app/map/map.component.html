@@ -19,20 +19,37 @@
 
   <div id="map" class="map"></div>
 
-  <div class="file-control">
-    <button mat-raised-button class="save-in-file-btn" [disabled]="isSaveGeoDataButtonDisabled" (click)="saveGeoDataInFile()">Save polygons in file</button>
+  <div class="overlay-and-file-control-container">
+    <div class="overlay-block">
+      <mat-form-field
+        cdkOverlayOrigin
+        #overlay="cdkOverlayOrigin"
+        [class.overlay-input-active]="showOverlay | async">
+        <mat-label>Type of figure to display</mat-label>
+        <input #overlayInput matInput type="text" [formControl]="overlayControl">
+        <mat-icon matSuffix>arrow_drop_down</mat-icon>
+      </mat-form-field>
+      <ng-template
+        cdkConnectedOverlay
+        [cdkConnectedOverlayOrigin]="overlay"
+        [cdkConnectedOverlayHasBackdrop]="true"
+        [cdkConnectedOverlayOffsetY]="-28"
+        [cdkConnectedOverlayOpen]="(showOverlay | async) || false">
+        <ul class="overlay-list">
+          <li class="list" *ngFor="let item of itemKind" (click)="getSelectedValueFromOverlay(item)">{{item}}</li>
+        </ul>
+      </ng-template>
+    </div>
 
-    <mat-form-field appearance="fill" cdkOverlayOrigin #overlay="cdkOverlayOrigin">
-      <mat-select multiple></mat-select>
-    </mat-form-field>
-    <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="overlay" [cdkConnectedOverlayOpen]="true">
-      <ul class="overlay-list">
-        <li *ngFor="let item of itemKind">{{item}}</li>
-      </ul>
-    </ng-template>
+    <div class="file-control-block">
+      <button mat-raised-button class="save-in-file-btn" [disabled]="isSaveGeoDataButtonDisabled" (click)="saveGeoDataInFile()">Save polygons in file</button>
+      <button mat-raised-button class="load-from-file-btn" (click)="fileInput.click()">Load polygons from file</button>
+      <input hidden id="file" type="file" #fileInput [formControl]="fileControl" (change)="getGeoDataFromFile($event)">
 
-    <button mat-raised-button class="load-from-file-btn" (click)="fileInput.click()">Load polygons from file</button>
-    <input hidden id="file" type="file" #fileInput [formControl]="fileControl" (change)="getGeoDataFromFile($event)">
+      <button mat-raised-button class="next-page-btn" matTooltip="Another map">
+        <mat-icon>arrow_forward_ios</mat-icon>
+      </button>
+    </div>
   </div>
 </div>
 
