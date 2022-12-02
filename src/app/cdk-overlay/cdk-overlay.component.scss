@@ -1,0 +1,45 @@
+.overlay-list {
+  padding: 0;
+  width: 200px;
+  background: #1b1b21;
+
+  .list {
+    width: 100%;
+    padding: 3px 0 3px 15px;
+    list-style-type: none;
+    color: #9f9f9f;
+    font-size: 16px;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
+
+.overlay-input-active {
+  z-index: 1000000;
+}
+
+.overlay-container {
+  ::ng-deep {
+    .mat-form-field-appearance-legacy .mat-form-field-label {
+      color: #9f9f9f;
+    }
+
+    .mat-form-field-appearance-legacy .mat-form-field-underline {
+      background-color: #9f9f9f;
+    }
+
+    .mat-input-element {
+      color: white;
+    }
+
+    .mat-icon {
+      color: #9f9f9f;
+    }
+
+    .overlay-backdrop {
+      opacity: 0;
+    }
+  }
+}

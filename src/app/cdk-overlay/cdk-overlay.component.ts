@@ -1,10 +1,17 @@
-import {Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  ViewChild,
+} from '@angular/core';
 import {merge, Observable} from "rxjs";
 import {CdkConnectedOverlay} from "@angular/cdk/overlay";
 import {filter, mapTo} from "rxjs/operators";
 import {FocusMonitor} from "@angular/cdk/a11y";
 import {FormControl} from "@angular/forms";
-import * as L from "leaflet";
 import {FeatureGroup} from "leaflet";
 
 @Component({
@@ -27,7 +34,8 @@ export class CdkOverlayComponent implements OnInit {
 
   overlayControl = new FormControl('');
 
-  constructor(private readonly focusMonitor: FocusMonitor) { }
+  constructor(private readonly focusMonitor: FocusMonitor) {
+  }
 
   ngOnInit(): void {
     this.overlayControl.patchValue('All');
@@ -46,9 +54,21 @@ export class CdkOverlayComponent implements OnInit {
     this.showOverlay = merge(this.isOverlayVisible, this.isOverlayHidden);
   }
 
-  setSelectedValue(selectedValue: string): void {
-   this.overlayControl.patchValue(selectedValue);
-   this.selectedValueFromOverlay.emit(selectedValue);
-  }
+  setSelectedValueAndCloseOverlay(selectedValue: string): void {
+    this.overlayControl.patchValue(selectedValue);
 
+    this.isOverlayHidden
+      .pipe(
+        mapTo(true)
+      )
+
+    this.isOverlayVisible
+      .pipe(
+        mapTo(false)
+      )
+
+    this.showOverlay = merge(this.isOverlayVisible, this.isOverlayHidden);
+    this.selectedValueFromOverlay.emit(selectedValue);
+  }
 }
+

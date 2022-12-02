@@ -4,9 +4,8 @@ import 'leaflet.markercluster';
 import 'leaflet-draw';
 import {StorageService} from "../services/storage.service";
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
-import {Coordinate} from "../interface/coordinate";
-import {fromEvent, merge, Observable, Subject} from "rxjs";
-import {filter, mapTo, takeUntil, tap} from "rxjs/operators";
+import {fromEvent, Subject} from "rxjs";
+import {takeUntil, tap} from "rxjs/operators";
 import {GeoJsonObject} from "geojson";
 import '@geoman-io/leaflet-geoman-free';
 import {FileService} from "../services/file.service";
@@ -40,6 +39,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     iconAnchor: [20, 50]
   });
   // drawnItemCollection = {features: <any>[], type: 'FeatureCollection'};
+  splittedCoordinatesArray: string[] = [];
 
   fileControl = new FormControl('');
 
@@ -201,6 +201,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     switch (selectedValue) {
       case 'Points': {
         this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
+        this.map.addLayer(this.markerCluster);
 
         this.drawnItems.eachLayer(layer => {
           if (layer instanceof L.Circle || layer instanceof L.Polygon || layer instanceof L.Rectangle) {
@@ -212,6 +213,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       case 'Polygons': {
         this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
+        this.map.removeLayer(this.markerCluster);
 
         this.drawnItems.eachLayer(layer => {
           if (layer instanceof L.Rectangle || layer instanceof L.Marker || layer instanceof L.Circle) {
@@ -223,6 +225,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       default: {
         this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
+        this.map.addLayer(this.markerCluster);
 
         break;
       }
@@ -230,8 +233,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   addMarkerClusters(): void {
-   this.markerCluster.addLayer(this.drawnItems);
-   this.map.addLayer(this.markerCluster);
+    this.drawnItems.eachLayer(layer => {
+      if (layer instanceof L.Marker) {
+        this.markerCluster.addLayer(layer);
+        this.map.addLayer(this.markerCluster);
+      }
+    })
   }
 
   watchSecondMap(): void {
@@ -312,20 +319,20 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  readDataFromClipBoard(): void {
+  readAndSetCoordinatesFromClipboardIntoForm(): void {
     navigator.clipboard.readText().then((value) => {
       this.splitCoordinates(value);
+      this.setCoordinatesIntoForm();
     });
   }
 
   splitCoordinates(valueFromClipboard: string): void {
-    const coordinatesArray = valueFromClipboard.split('').filter(value => value !== ',').join('').split(' ', 2);
-    this.setCoordinatesIntoForm({x: coordinatesArray[0], y: coordinatesArray[1]});
+    this.splittedCoordinatesArray = valueFromClipboard.split('').filter(value => value !== ',').join('').split(' ', 2);
   }
 
-  setCoordinatesIntoForm(coordinate: Coordinate): void {
-    this.coordinatesForm.get('coordinateX')?.setValue(coordinate.x);
-    this.coordinatesForm.get('coordinateY')?.setValue(coordinate.y);
+  setCoordinatesIntoForm(): void {
+    this.coordinatesForm.get('coordinateX')?.setValue(this.splittedCoordinatesArray[0]);
+    this.coordinatesForm.get('coordinateY')?.setValue(this.splittedCoordinatesArray[1]);
   }
 
   setMarkerByCoordinates(): void {
@@ -342,7 +349,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       .pipe(
         tap((e: KeyboardEvent) => {
           if (e.keyCode === 86 && e.ctrlKey) {
-            this.readDataFromClipBoard();
+            this.readAndSetCoordinatesFromClipboardIntoForm();
           }
         }),
         takeUntil(this.unsubscribe$)
