@@ -14,12 +14,14 @@ import {MatTooltipModule} from "@angular/material/tooltip";
 import { AppRoutingModule } from './app-routing.module';
 import { SecondMapComponent } from './second-map/second-map.component';
 import {RouterModule} from "@angular/router";
+import { CdkOverlayComponent } from './cdk-overlay/cdk-overlay.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     MapComponent,
-    SecondMapComponent
+    SecondMapComponent,
+    CdkOverlayComponent
   ],
   imports: [
     BrowserModule,

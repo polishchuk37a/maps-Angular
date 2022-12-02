@@ -41,14 +41,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   // drawnItemCollection = {features: <any>[], type: 'FeatureCollection'};
 
-  showOverlay: Observable<boolean>;
-  isOverlayVisible: Observable<boolean>;
-  isOverlayHidden: Observable<boolean>;
-
   fileControl = new FormControl('');
-  overlayControl = new FormControl('');
-
-  itemKind = ['All', 'Points', 'Polygons'];
 
   coordinatesForm = this.formBuilder.group({
     coordinateX: ['', [Validators.required, Validators.pattern(/^-?([0-9]{1,2}|1[0-7][0-9]|180)(\.[0-9]{1,15})?$/)]],
@@ -85,19 +78,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.getGeoDataFromStorage();
     this.addMarkerClusters();
     // this.hideOrShowDrawnItems();
-
-    this.isOverlayVisible = this.focusMonitor.monitor(this.overlayInput)
-      .pipe(
-        filter((focused) => !!focused),
-        mapTo(true)
-      )
-
-    this.isOverlayHidden = this.overlay.backdropClick
-      .pipe(
-        mapTo(false)
-      )
-
-    this.showOverlay = merge(this.isOverlayVisible, this.isOverlayHidden);
   }
 
   initMap(): void {
@@ -217,9 +197,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   //   });
   // }
 
-  getSelectedValueFromOverlay(selectedValue: string): void {
-    this.overlayControl.patchValue(selectedValue);
-
+  showOrHideLayersBySelectedValueFromOverlay(selectedValue: string): void {
     switch (selectedValue) {
       case 'Points': {
         this.drawnItems.eachLayer(layer => this.map.addLayer(layer));
